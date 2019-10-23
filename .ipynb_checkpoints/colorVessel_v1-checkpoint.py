@@ -122,14 +122,15 @@ def angleRot(edges):
     angle = math.degrees(math.atan((pt1[1] - pt2[1])/ (pt2[0] - pt1[0])))
     return angle
 
-def rotMain(result, angle):
+def rotMain(result, angle, filename):
     rows,cols = result.shape[:2]
     M = cv2.getRotationMatrix2D((cols/2,rows/2),angle*-1,1)
     dst = cv2.warpAffine(result,M,(cols,rows))
     return dst
 
-def flatMain(edges, cut1 = None, cut2 = None):
-    # convert pixels into x-y data
+def flatMain(edges, fileame, cut1 = None, cut2 = None):
+    # convert pixels into x-y datad
+    cv2.imwrite(filename[:-4]+'-canny.jpg', edges)
     value = edges.flatten()
     y1,x1 = np.indices(edges.shape).reshape(-1,len(value))
     x1 = x1.astype(float); y1 = y1.astype(float)
@@ -151,7 +152,7 @@ def flatMain(edges, cut1 = None, cut2 = None):
     plt.axvline(x = cut2, color = 'red')    
     plt.subplot(2, 1, 2)    
     plt.scatter(x2,y2)
-    plt.savefig('flat.png', dpi = 300)
+    plt.savefig(filename[:-4]+'-flat.jpg', dpi = 300)
     plt.clf()
     return x2, y2
 
@@ -232,7 +233,7 @@ pxPerCm = pullScale(image)
 def cropper(image):
     global cropping, mode, ix,iy,drawing,mode,x_,y_, r
     # keep looping until the 'q' key is pressed
-    # initialize the list of reference points and boolean indicating
+    # initialize the list of referennce points and boolean indicating
     # whether cropping is being performed or not
     temp_img = np.copy(image)
     #img = np.zeros((512,512,3), np.uint8)
@@ -385,16 +386,17 @@ cv2.resizeWindow('image', 400,400)
 cv2.imshow('image', frame)
 roi2Can = cannyFun(frame)
 angle = angleRot(roi2Can)
-rotRoi = rotMain(frame, angle)
+rotRoi = rotMain(frame, angle, filename)
 cv2.namedWindow('rot', cv2.WINDOW_NORMAL)
 cv2.resizeWindow('rot', 600,600)
 cv2.moveWindow("rot", 0,300)
 cv2.imshow('rot', rotRoi)
+cv2.imwrite(filename[:-4]+'-rotated.jpg', rotRoi)
 cv2.waitKey(0)
 os.remove('hsv_image.png')
 rotCan = cannyFun(rotRoi)
 
-x,y = flatMain(rotCan)
+x,y = flatMain(rotCan, filename)
 
 # create trackbars for color change
     
@@ -408,14 +410,14 @@ while(True):
     # get trackbar positions
     cut1 = cv2.getTrackbarPos('cut1', 'select_vessel_length')
     cut2 = cv2.getTrackbarPos('cut2', 'select_vessel_length')
-    x,y = flatMain(rotCan, cut1, cut2)
+    x,y = flatMain(rotCan, filename, cut1, cut2)
 
     # show thresholded image
     
     cv2.namedWindow("Flat", cv2.WINDOW_NORMAL)
     cv2.moveWindow("Flat", 0,0)
     cv2.resizeWindow('Flat', 600,600)
-    hsv = cv2.imread('flat.png')
+    hsv = cv2.imread(filename[:-4]+'-flat.jpg')
     cv2.imshow("Flat", hsv)
     k = cv2.waitKey(1000) & 0xFF # large wait time to remove freezing
     if k == 113 or k == 27 or k == ord("c"):
